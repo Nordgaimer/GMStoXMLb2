@@ -47,6 +47,11 @@ public class QueryBuilder {
     }
 
 
+    /**
+     * Generates list of queries for all documents tables with parameters (date period and documents id)
+     * @param docCodes
+     * @return
+     */
     public List<String> generalQueryBuilder (ArrayList <Integer> docCodes){
         return null;
     }
