@@ -31,27 +31,28 @@ public class ConnectionManager extends Pane {
     Button dbTryConnectionBtn;
     @FXML
     Button dbConnectBtn;
+    /*
+    * Stub
+    * */
 
-    public static String getConnParams;
+    static String dbInstance_ = "GMSNORDGAIMER";
+    static String dbIP_ = "localhost";
+    static String dbName_ = "GMSSample38";
+    static String dbLogin_ = "sa";
+    static String dbPass_ = "QQQqqq123";
+    public static String getConnParams =JDBC_Utils.jdbcUrlBuilder(dbInstance_, dbIP_, dbName_, dbLogin_, dbPass_);
+
 
     public void connectToDB(ActionEvent event) {
         /*
-        * Stub
-        * */
-        String dbInstanceConverted = "GMSNORDGAIMER";
-        String dbIPConverted = "localhost";
-        String dbNameConverted = "GMSSample38";
-        String dbLoginConverted = "sa";
-        String dbPassConverted = "QQQqqq123";
-        /*
         * For real work.
         * */
-        //String dbInstanceConverted = dbInstance.getText();
-        //String dbIPConverted = dbIP.getText();
-        //String dbNameConverted = dbName.getText();
-        //String dbLoginConverted = dbLogin.getText();
-        // String dbPassConverted = dbPassword.getText();
-        getConnParams =JDBC_Utils.jdbcUrlBuilder(dbInstanceConverted,dbIPConverted,dbNameConverted,dbLoginConverted,dbPassConverted);
+        //private String dbInstance_ = dbInstance.getText();
+        //private String dbIP_ = dbIP.getText();
+        //private String dbName_ = dbName.getText();
+        //private String dbLogin_ = dbLogin.getText();
+        //private String dbPass_ = dbPassword.getText();
+        getConnParams =JDBC_Utils.jdbcUrlBuilder(dbInstance_, dbIP_, dbName_, dbLogin_, dbPass_);
         try {
             Connection conn = DriverManager.getConnection(getConnParams);
             ((Node) (event.getSource())).getScene().getWindow().hide();
