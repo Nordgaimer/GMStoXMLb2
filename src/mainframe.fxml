@@ -18,7 +18,7 @@
        <Button fx:id="selectYear" onAction="#yearSelected" layoutX="206.0" layoutY="93.0" mnemonicParsing="false" prefHeight="23.0" prefWidth="57.0" text="Год" />
 
        <!-- Doc picker-->
-       <Button fx:id="chooseDocType" onAction="#getDocTypeList" layoutX="68.0" layoutY="6.0" mnemonicParsing="false" prefHeight="23.0" prefWidth="141.0" text="Выбрать тип документа" />
+       <Button fx:id="chooseDocType" onAction="#getDocTypeListToPreview" layoutX="68.0" layoutY="6.0" mnemonicParsing="false" prefHeight="23.0" prefWidth="141.0" text="Выбрать тип документа" />
 
        <!-- Search Doc by DocID-->
        <Label layoutX="14.0" layoutY="133.0" text="Поиск по номеру документа:" />

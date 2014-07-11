@@ -2,6 +2,7 @@ package FXMLControllers;
 
 import ConnectionManager.*;
 import DataOperator.QueryBuilder;
+import DataOperator.XMLBuilder;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -15,12 +16,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
+import javax.sound.sampled.Clip;
+import javax.swing.*;
+import java.io.*;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,6 +34,8 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class MainFrameController implements Initializable {
@@ -52,7 +60,6 @@ public class MainFrameController implements Initializable {
     private SimpleDateFormat currentFormat = new SimpleDateFormat("dd/MM/yyyy");
     private String choosedDocName;
     private String unChoosedDocName;
-    private int docCode;
 
     Connection connection = null;
     //Java FX collection that holds all document names in alphabet order
@@ -74,7 +81,7 @@ public class MainFrameController implements Initializable {
      * 2. Load them into list ("Выбирите тип документа:") and awaiting for user choice.
      * 3. Load user choice to 'listOfchoosedDocuments'.
      */
-    public void getDocTypeList() {
+    public void getDocTypeListToPreview() {
         try {
             connection = DriverManager.getConnection(ConnectionManager.getConnParams);
             mapOfData = QueryBuilder.getDocsCatalog(connection);
@@ -121,15 +128,16 @@ public class MainFrameController implements Initializable {
         stage.show();
         docNames.clear();
     }
-   //Converts choosed Document names to Documents ID for Query builder.
-    public void docNameConvertToID () {
+
+    //Converts choosed Document names to Documents ID and puts them to listOfDocIDByTypes (data for transfer)
+    public void docNameConvertToID() {
         for (Map.Entry<Integer, String> entry : mapOfData.entrySet()) {
             for (String value : listOfchoosedDocuments) {
                 String searchingDocName = entry.getValue();
                 int searchingDocCode = entry.getKey();
 
                 if (searchingDocName.equals(value)) {
-                    docCode = searchingDocCode;
+                    int docCode = searchingDocCode;
                     listOfDocIDByTypes.add(docCode);
                 }
             }
@@ -142,7 +150,6 @@ public class MainFrameController implements Initializable {
         if (dateToValidate == null) {
             return false;
         }
-
         try {
             //if not valid, it will throw ParseException
             Date date = currentFormat.parse(dateToValidate);
@@ -266,7 +273,6 @@ public class MainFrameController implements Initializable {
 
     }
 
-
     //Document object model
     public class Document {
         private BooleanProperty selected;
@@ -341,58 +347,64 @@ public class MainFrameController implements Initializable {
     }
 
 
-    // Just for test now.
-    public void importToXML() {
-        if (checkThatDatesSelected()) {
-            listOfPeriod.add(fromDate.getText());
-            listOfPeriod.add(tillDate.getText());
+    // Open Saving dialog for user
+    public void fileChooser (String content){
+        Group root = new Group();
+        final Stage stage = new Stage();
+        stage.setScene(new Scene(root, 500, 400));
+        stage.centerOnScreen();
+        FileChooser fileChooser = new FileChooser();
+
+
+        //Set extension filter
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
+        fileChooser.getExtensionFilters().add(extFilter);
+
+        //Show save file dialog
+        File file = fileChooser.showSaveDialog(stage);
+
+        if(file != null){
+            SaveFile(content, file);
         }
-        if (checkGetDocIDFiled()) {
-            try {
-                String[] docs = getDocByID.getText().split(",");
-                for (int i = 0; i < docs.length; i++) {
-                    listOfDocsSelectedByID.add(Integer.valueOf(docs[i]));
-                }
-                docs=new String[0];
-            } catch (Exception e) {
-                new ErrorMsg("Некоректный номер документа");
-            }
-        }
-        docNameConvertToID();
-
-        /**
-         * TEST
-         */
-        for (Integer value   : listOfDocIDByTypes)
-
-        {
-            System.out.println(value);
-        }
-
-        for (String value: listOfPeriod)
-
-        {
-            System.out.println(value);
+    }
+    // Saving file method
+    private void SaveFile(String content, File file){
+        try {
+            FileWriter fileWriter = null;
+            fileWriter = new FileWriter(file);
+            fileWriter.write(content);
+            fileWriter.close();
+        } catch (IOException ex) {
+            Logger.getLogger(MainFrameController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        for (String value : listOfchoosedDocuments)
-
-        {
-            System.out.println(value);
-        }
-
-        for (Integer value   : listOfDocsSelectedByID)
-
-        {
-            System.out.println(value);
-        }
-
-        listOfDocsSelectedByID.clear();
-        listOfPeriod.clear();
-        listOfchoosedDocuments.clear();
-        listOfDocIDByTypes.clear();
     }
 
+    /**
+     * Button 'Import to XML' - last step of application.
+     * IN TEST MODE NOW!
+     * @throws SQLException
+     */
+    public void importToXML() throws SQLException, IOException {
+        listOfPeriod.clear();
+        listOfDocIDByTypes.clear();
+        listOfDocsSelectedByID.clear();
+
+        //init XMLBuilder
+        XMLBuilder xmlBuilder = new XMLBuilder();
+        String content = xmlBuilder.stringBuilderToXMLFormat();
+
+        if (checkThatDatesSelected()){
+            listOfPeriod.add(fromDate.getText());
+            listOfPeriod.add(tillDate.getText());
+            //Transfer selected data by user to listOfDocIDByTypes (List that store selected document types)
+            docNameConvertToID();
+            fileChooser(content);
+        }
+        listOfPeriod.clear();
+        listOfDocIDByTypes.clear();
+        listOfDocsSelectedByID.clear();
+    }
 }
 
 

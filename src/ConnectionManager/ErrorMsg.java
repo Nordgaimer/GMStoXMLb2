@@ -15,9 +15,6 @@ import javafx.stage.Stage;
 
 
 public class ErrorMsg extends Stage {
-
-
-
     public ErrorMsg(String title, String resultText, boolean isSuccess){
         if (isSuccess){
             Group root = new Group();
