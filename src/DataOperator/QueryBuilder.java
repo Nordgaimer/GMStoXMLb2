@@ -1,10 +1,9 @@
 package DataOperator;
 
 import ConnectionManager.JDBC_Utils;
-import FXMLControllers.ConnectionManager;
+import FXMLControllers.ConnectionController;
 import FXMLControllers.MainFrameController;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
 import java.sql.*;
@@ -15,38 +14,61 @@ public class QueryBuilder {
 
 
     private static LinkedList<String> selectedDates = MainFrameController.listOfPeriod;
-    private static ArrayList<Integer> selectedDocsByID = MainFrameController.listOfDocsSelectedByID;
+    private static ArrayList<String> selectedDocsByID = MainFrameController.listOfDocsSelectedByID;
+    private static  ArrayList<String> foundedTableWithDocDate = new ArrayList<>();
+    private static int foundedTablesCount;
 
     /**
      * Returns query with params. like date and documents number (if exists)
      *
      * @return sql query with params
      */
+
     public String buildQueryWithParams(String docTableName) throws SQLException {
-        String readyQuery = "";
-        if (isDocDateExistsInTable(docTableName)) {
+        String readyQuery="";
+        //Checking if user select any particular document number
+        if (selectedDocsByID.size()==0){
+            if (isDocDateExistsInTable(docTableName)) {
                 readyQuery = "select * from " + docTableName + " where DocDate BETWEEN '" + selectedDates.get(0) + "' AND '" + selectedDates.get(1) + "'";
-            } else {
-                readyQuery = "select * from " + docTableName;
+                foundedTableWithDocDate.add(docTableName);
+                foundedTablesCount++;
+            }else{
+                readyQuery = "select * from " + docTableName + " where ChID IN (select CHiD from " + foundedTableWithDocDate.get(foundedTablesCount-1) + " where DocDate BETWEEN '" + selectedDates.get(0) + "' AND '" + selectedDates.get(1) + "')";
             }
-        System.out.println(readyQuery);
+        }
+        else
+        {
+            String ChID = "";
+            for (int i=0;i<selectedDocsByID.size();i++){
+                if (selectedDocsByID.size()==1){
+                    ChID += selectedDocsByID.get(i);
+                }
+                if (selectedDocsByID.size()>1 && selectedDocsByID.size()!=1){
+                    ChID += selectedDocsByID.get(i)+",";
+                }
+                if (i==selectedDocsByID.size()-1 && selectedDocsByID.size()!=1){
+                    ChID += selectedDocsByID.get(i);
+                }
+            }
+            readyQuery = "select * from " + docTableName + " where ChID IN("+ChID+")";
+        }
         return readyQuery;
     }
 
     /**
      * Сheking if particular table in database has column with name "DocDate"
+     *
      * @param docTableName - name of table
      * @return Result true/false
      * @throws SQLException
      */
     public boolean isDocDateExistsInTable(String docTableName) throws SQLException {
         ArrayList<String> columnNames = new ArrayList<String>();
-        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
         String query = "select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME ='" + docTableName + "'";
         Statement stat = null;
         ResultSet rs = null;
         String searchedValue = "DocDate";
-        Boolean result;
         try {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
@@ -63,7 +85,7 @@ public class QueryBuilder {
             conn.commit();
             for (String value : columnNames) {
                 if (value.contentEquals(searchedValue))
-                    return result=true;
+                    return true;
             }
 
         } catch (SQLException e) {
@@ -74,45 +96,8 @@ public class QueryBuilder {
             JDBC_Utils.closeQuietly(conn);
             JDBC_Utils.closeQuietly(stat);
         }
-        return result=false;
+        return false;
     }
-
-//    // Gets Document tables for selected DocTypes ID
-//    public HashMap<String, String> getDocTables(String docCodeConverted) throws SQLException {
-//        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
-//        String query = "select TableCode,TableName,TableDesc from z_Tables where DocCode=" + docCodeConverted;
-//        Statement stat = null;
-//        ResultSet rs = null;
-//        String tableName;
-//        String tabbleDesc;
-//        int tableCode;
-//        HashMap<String, String> tableList = new HashMap<String, String>();
-//
-//        try {
-//            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-//            conn.setAutoCommit(false);
-//            stat = conn.createStatement();
-//            rs = stat.executeQuery(query);
-//
-//            while (rs.next()) {
-//                tableCode = rs.getInt(1);
-//                tableName = rs.getString(2);
-//                tabbleDesc = rs.getString(3);
-//                tableList.put(tableName, "<Table TableCode='" + String.valueOf(tableCode) + "' TableName='" + tableName + "' TableDesc='" + tabbleDesc + "'\n");
-//            }
-//            conn.commit();
-//
-//            return tableList;
-//        } catch (SQLException e) {
-//            System.out.println(e);
-//
-//        } finally {
-//            JDBC_Utils.closeQuietly(rs);
-//            JDBC_Utils.closeQuietly(conn);
-//            JDBC_Utils.closeQuietly(stat);
-//        }
-//        return tableList;
-//    }
 
     /**
      * Returns document name by document code
@@ -122,7 +107,7 @@ public class QueryBuilder {
      * @throws SQLException
      */
     public String getDocName(String docCode) throws SQLException {
-        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
         String query = "select DocName from z_Docs where DocCode=" + docCode;
         Statement stat = null;
         ResultSet rs = null;
@@ -161,7 +146,7 @@ public class QueryBuilder {
      * @throws SQLException
      */
     public String getTableCode(String tableName) throws SQLException {
-        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
         String query = "select TableCode from z_Tables where TableName ='" + tableName + "'";
         Statement stat = null;
         ResultSet rs = null;
@@ -197,7 +182,7 @@ public class QueryBuilder {
      * @throws SQLException
      */
     public String getTableDesc(String tableName) throws SQLException {
-        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
         String query = "select TableDesc from z_Tables where TableName ='" + tableName + "'";
         Statement stat = null;
         ResultSet rs = null;
@@ -234,7 +219,7 @@ public class QueryBuilder {
      */
     public ArrayList<String> getAllTableNames(String docCode) throws SQLException {
         ArrayList<String> tableNames = new ArrayList<String>();
-        Connection conn = DriverManager.getConnection(ConnectionManager.getConnParams);
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
         String query = "select TableName from z_Tables where DocCode=" + docCode;
         Statement stat = null;
         ResultSet rs = null;
@@ -263,6 +248,38 @@ public class QueryBuilder {
         return tableNames;
     }
 
+    public ArrayList<String> getAllDocCodes() throws SQLException {
+        ArrayList<String> tableNames = new ArrayList<String>();
+        Connection conn = DriverManager.getConnection(ConnectionController.getConnParams);
+        String query = "select DocCode from z_Docs where DocCatCode=1";
+        Statement stat = null;
+        ResultSet rs = null;
+        String docCodes;
+
+        try {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            conn.setAutoCommit(false);
+            stat = conn.createStatement();
+            rs = stat.executeQuery(query);
+            while (rs.next()) {
+                docCodes = rs.getString(1);
+                tableNames.add(docCodes);
+            }
+            conn.commit();
+
+            return tableNames;
+        } catch (SQLException e) {
+            System.out.println(e);
+
+        } finally {
+            JDBC_Utils.closeQuietly(rs);
+            JDBC_Utils.closeQuietly(conn);
+            JDBC_Utils.closeQuietly(stat);
+        }
+        return tableNames;
+    }
+
+
     /**
      * Loads DocCode and DocName from z_Docs and put it in Collection HashMap for further usage.
      */
@@ -286,47 +303,6 @@ public class QueryBuilder {
             return result;
 
 
-        } catch (SQLException e) {
-            JDBC_Utils.rollbackQuietly(conn);
-        } finally {
-            JDBC_Utils.closeQuietly(rs);
-            JDBC_Utils.closeQuietly(conn);
-            JDBC_Utils.closeQuietly(stat);
-        }
-        return null;
-    }
-
-    /**
-     * Returns
-     */
-    public static ObservableList<String> getDocsPreview(Connection connection, String previewFinalQuery) {
-        Connection conn = connection;
-        Statement stat = null;
-        ResultSet rs = null;
-
-        try {
-            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-            conn.setAutoCommit(false);
-            stat = conn.createStatement();
-            rs = stat.executeQuery(previewFinalQuery);
-            ObservableMap<Integer, Integer> resultMap = FXCollections.observableHashMap();
-            ArrayList<String> resultList = new ArrayList<String>();
-            while (rs.next()) {
-                int docID = rs.getInt(1);
-                int docDate = rs.getInt(2);
-                resultMap.put(docID, docDate);
-            }
-            //Converting HashMap to ArrayList
-            for (Map.Entry<Integer, Integer> entry : resultMap.entrySet()) {
-                String firstStr = String.valueOf(entry.getKey());
-                resultList.add(firstStr);
-                String secondStr = String.valueOf(entry.getValue());
-                resultList.add(secondStr);
-            }
-            ObservableList<String> readyList = FXCollections.observableList(resultList);
-            conn.commit();
-
-            return readyList;
         } catch (SQLException e) {
             JDBC_Utils.rollbackQuietly(conn);
         } finally {

@@ -1,6 +1,6 @@
 package FXMLControllers;
 
-import ConnectionManager.*;
+import ConnectionManager.ErrorMsge;
 import DataOperator.QueryBuilder;
 import DataOperator.XMLBuilder;
 import javafx.beans.property.BooleanProperty;
@@ -16,7 +16,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -24,8 +23,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
-import javax.sound.sampled.Clip;
-import javax.swing.*;
 import java.io.*;
 import java.net.URL;
 import java.sql.Connection;
@@ -49,14 +46,14 @@ public class MainFrameController implements Initializable {
 
 
     //Stores date selection interval
-    public static LinkedList<String> listOfPeriod = new LinkedList<String>();
+    public static LinkedList<String> listOfPeriod = new LinkedList<>();
     // Stores selected Documents ID for XML import.
-    public static ArrayList<Integer> listOfDocIDByTypes = new ArrayList<Integer>();
+    public static ArrayList<Integer> listOfDocIDByTypes = new ArrayList<>();
     // Stores Documents ID if selected
-    public static ArrayList<Integer> listOfDocsSelectedByID = new ArrayList<Integer>();
+    public static ArrayList<String> listOfDocsSelectedByID = new ArrayList<>();
 
     //Temporary values for data transfer
-    private ArrayList<String> listOfchoosedDocuments = new ArrayList<String>();
+    private ArrayList<String> listOfchoosedDocuments = new ArrayList<>();
     private SimpleDateFormat currentFormat = new SimpleDateFormat("dd/MM/yyyy");
     private String choosedDocName;
     private String unChoosedDocName;
@@ -65,7 +62,7 @@ public class MainFrameController implements Initializable {
     //Java FX collection that holds all document names in alphabet order
     ObservableList<String> docNames = FXCollections.observableArrayList();
     //Java FX collection that holds all document names and documents codes with no order
-    static ObservableMap<Integer, String> mapOfData = FXCollections.observableHashMap();
+    public static ObservableMap<Integer, String> mapOfData = FXCollections.observableHashMap();
 
 
     @Override
@@ -83,7 +80,7 @@ public class MainFrameController implements Initializable {
      */
     public void getDocTypeListToPreview() {
         try {
-            connection = DriverManager.getConnection(ConnectionManager.getConnParams);
+            connection = DriverManager.getConnection(ConnectionController.getConnParams);
             mapOfData = QueryBuilder.getDocsCatalog(connection);
 
             for (String vales : mapOfData.values()) {
@@ -99,9 +96,9 @@ public class MainFrameController implements Initializable {
         Stage stage = new Stage();
         Group root = new Group();
         Scene scene = new Scene(root);
-        ArrayList<Document> list = new ArrayList<Document>();
-        for (int i = 0; i < docNames.size(); i++) {
-            list.add(new Document(false, docNames.get(i)));
+        ArrayList<Document> list = new ArrayList<>();
+        for (String docName : docNames) {
+            list.add(new Document(false, docName));
         }
         final ObservableList<Document> data = FXCollections.observableArrayList(list);
 
@@ -182,19 +179,23 @@ public class MainFrameController implements Initializable {
                 (frDate.compareTo(tiDate) < 1)) {
             return true;
         } else {
-            new ErrorMsg("Внимание! Не корректные даты.\n Введите даты в формате \n День/Месяц/Год (дд/мм/гггг)");
+            new ErrorMsge("Внимание! Не корректные даты.\n Введите даты в формате \n День/Месяц/Год (дд/мм/гггг)");
             return false;
         }
     }
 
     //Checks if field 'getDocByID' is empty or incorrect (transl. -  'Поиск по номеру документа' )
-    private boolean checkGetDocIDFiled() {
-        if (getDocByID.getText() != "" && getDocByID.getText() != null && getDocByID.getText().length() != 0)
-            //&& getDocByID.getText().matches("[0-9,]"))
-            return true;
-        else
-            getDocByID.setText("");
-        return false;
+    // If filed has a valid ID's - app add it to search list
+    public void checkGetDocIDFiled() {
+        if (getDocByID.getText() != "" && getDocByID.getText() != null && getDocByID.getText().length() != 0) {
+            List<String> docsID = Arrays.asList(getDocByID.getText().split("\\s*,\\s*"));
+            for (int i = 0; i < docsID.size(); i++) {
+                String regex = "[0-9]+";
+                if (docsID.get(i).matches(regex)) {
+                    listOfDocsSelectedByID.add(docsID.get(i));
+                }
+            }
+        }
     }
 
     //Selects current date
@@ -209,7 +210,7 @@ public class MainFrameController implements Initializable {
             tillDate.setText(endDate);
         } catch (Exception e) {
             e.printStackTrace();
-            new ErrorMsg("Проверьте формат даты.");
+            new ErrorMsge("Проверьте формат даты.");
         }
     }
 
@@ -229,7 +230,7 @@ public class MainFrameController implements Initializable {
             tillDate.setText(endDate);
         } catch (Exception e) {
             e.printStackTrace();
-            new ErrorMsg("Проверьте формат даты.");
+            new ErrorMsge("Проверьте формат даты.");
         }
     }
 
@@ -249,7 +250,7 @@ public class MainFrameController implements Initializable {
             tillDate.setText(endDate);
         } catch (Exception e) {
             e.printStackTrace();
-            new ErrorMsg("Проверьте формат даты.");
+            new ErrorMsge("Проверьте формат даты.");
         }
     }
 
@@ -268,9 +269,17 @@ public class MainFrameController implements Initializable {
             tillDate.setText(endDate);
         } catch (Exception e) {
             e.printStackTrace();
-            new ErrorMsg("Проверьте формат даты.");
+            new ErrorMsge("Проверьте формат даты.");
         }
 
+    }
+
+    //Convert date format in SQL date format (to avoid SQL exception)
+    public static String dateConvertSQLFormat(String givenDate) {
+        String year = givenDate.substring(6);
+        String month = givenDate.substring(3, 5);
+        String date = givenDate.substring(0, 2);
+        return year + "-" + month + "-" + date;
     }
 
     //Document object model
@@ -346,11 +355,10 @@ public class MainFrameController implements Initializable {
         }
     }
 
-
     // Open Saving dialog for user
-    public void fileChooser (String content){
+    public void fileChooser(String content) {
         Group root = new Group();
-        final Stage stage = new Stage();
+        Stage stage = new Stage();
         stage.setScene(new Scene(root, 500, 400));
         stage.centerOnScreen();
         FileChooser fileChooser = new FileChooser();
@@ -363,14 +371,15 @@ public class MainFrameController implements Initializable {
         //Show save file dialog
         File file = fileChooser.showSaveDialog(stage);
 
-        if(file != null){
+        if (file != null) {
             SaveFile(content, file);
         }
     }
+
     // Saving file method
-    private void SaveFile(String content, File file){
+    private void SaveFile(String content, File file) {
         try {
-            FileWriter fileWriter = null;
+            FileWriter fileWriter;
             fileWriter = new FileWriter(file);
             fileWriter.write(content);
             fileWriter.close();
@@ -383,6 +392,7 @@ public class MainFrameController implements Initializable {
     /**
      * Button 'Import to XML' - last step of application.
      * IN TEST MODE NOW!
+     *
      * @throws SQLException
      */
     public void importToXML() throws SQLException, IOException {
@@ -390,17 +400,22 @@ public class MainFrameController implements Initializable {
         listOfDocIDByTypes.clear();
         listOfDocsSelectedByID.clear();
 
-        //init XMLBuilder
-        XMLBuilder xmlBuilder = new XMLBuilder();
-        String content = xmlBuilder.stringBuilderToXMLFormat();
-
-        if (checkThatDatesSelected()){
-            listOfPeriod.add(fromDate.getText());
-            listOfPeriod.add(tillDate.getText());
-            //Transfer selected data by user to listOfDocIDByTypes (List that store selected document types)
-            docNameConvertToID();
-            fileChooser(content);
+        try {
+            if (checkThatDatesSelected()) {
+                XMLBuilder xmlBuilder = new XMLBuilder();
+                listOfPeriod.add(dateConvertSQLFormat(fromDate.getText()));
+                listOfPeriod.add(dateConvertSQLFormat(tillDate.getText()));
+                //check if user selected any docs id
+                checkGetDocIDFiled();
+                docNameConvertToID();
+                //Check if any data available
+                fileChooser(xmlBuilder.stringBuilderToXMLFormat());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            new ErrorMsge("В данном периоде нет документов");
         }
+
         listOfPeriod.clear();
         listOfDocIDByTypes.clear();
         listOfDocsSelectedByID.clear();
