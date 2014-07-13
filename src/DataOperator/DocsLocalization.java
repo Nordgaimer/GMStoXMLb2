@@ -43,7 +43,6 @@ public class DocsLocalization {
             JDBC_Utils.closeQuietly(conn);
             JDBC_Utils.closeQuietly(stat);
         }
-
     }
 
     //Searching in HashMap field name description in rus.

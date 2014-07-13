@@ -64,7 +64,7 @@ public class MainFrameController implements Initializable {
     //Java FX collection that holds all document names and documents codes with no order
     public static ObservableMap<Integer, String> mapOfData = FXCollections.observableHashMap();
 
-
+    //Default JavaFX init. method
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         fromDate.setPromptText("дд/мм/гггг");
@@ -399,7 +399,6 @@ public class MainFrameController implements Initializable {
         listOfPeriod.clear();
         listOfDocIDByTypes.clear();
         listOfDocsSelectedByID.clear();
-
         try {
             if (checkThatDatesSelected()) {
                 XMLBuilder xmlBuilder = new XMLBuilder();
@@ -415,7 +414,6 @@ public class MainFrameController implements Initializable {
             e.printStackTrace();
             new ErrorMsge("В данном периоде нет документов");
         }
-
         listOfPeriod.clear();
         listOfDocIDByTypes.clear();
         listOfDocsSelectedByID.clear();

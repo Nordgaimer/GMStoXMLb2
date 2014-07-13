@@ -23,8 +23,8 @@ public class XMLBuilder {
     }
 
     /**
-     * Standart JAVA API for XML Building, converts ResultSet to XML String.
-     *
+     * XML String building by StringBuffer. This is manual XML builder.
+     * Should be the fastest, but mat have some encoding issues.
      * @return XML String.
      * @throws SQLException
      * @throws ParserConfigurationException
@@ -55,7 +55,7 @@ public class XMLBuilder {
 
     /**
      * Generating XML string, reads all documents data from particular table
-     *
+     * Didn't use any DOM default JAVA XML Parsers.
      * @param docTableName - Particular document table name
      * @return - String in XML format.
      * @throws SQLException
@@ -74,7 +74,6 @@ public class XMLBuilder {
         } else {
             isAnyDataAvailable = true;
         }
-
         while (rs.next()) {
             xml.append("<Row>\n");
             for (int j = 1; j <= colCount; j++) {

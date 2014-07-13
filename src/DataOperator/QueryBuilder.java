@@ -112,9 +112,7 @@ public class QueryBuilder {
         Statement stat = null;
         ResultSet rs = null;
         String docName = "";
-
         HashMap<String, String> tableList = new HashMap<String, String>();
-
         try {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
@@ -224,7 +222,6 @@ public class QueryBuilder {
         Statement stat = null;
         ResultSet rs = null;
         String tableName;
-
         try {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
@@ -255,7 +252,6 @@ public class QueryBuilder {
         Statement stat = null;
         ResultSet rs = null;
         String docCodes;
-
         try {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
@@ -287,7 +283,6 @@ public class QueryBuilder {
         Connection conn = connection;
         Statement stat = null;
         ResultSet rs = null;
-
         try {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
@@ -301,8 +296,6 @@ public class QueryBuilder {
             }
             conn.commit();
             return result;
-
-
         } catch (SQLException e) {
             JDBC_Utils.rollbackQuietly(conn);
         } finally {

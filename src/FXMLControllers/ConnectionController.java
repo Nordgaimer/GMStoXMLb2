@@ -29,10 +29,8 @@ public class ConnectionController extends Pane {
     PasswordField dbPassword;
     @FXML
     Button dbTryConnectionBtn;
-    @FXML
-    Button dbConnectBtn;
     /*
-    * Stub for fast connection
+    * Stub for fast connection (TESTING MODE)
     */
 //    static String dbInstance_ = "MS2008R2E";
 //    static String dbIP_ = "localhost";
